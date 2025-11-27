@@ -3,5 +3,6 @@
 	"vscord.status.state.text.editing": ":3",
 	"vscord.status.state.text.viewing": ":3",
 	"vscord.status.state.text.debugging": ":3",
-	"vscord.status.state.text.notInFile": ":3"
+	"vscord.status.state.text.notInFile": ":3",
+	"nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix"
 }

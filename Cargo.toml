@@ -9,11 +9,8 @@ dotenvy = { git = "https://github.com/allan2/dotenvy", branch = "main", features
     "macros",
 ] }
 tokio = { version = "1.44.1", features = ["full"] }
-bollard = "0.19.4"
 
 reqwest = "0.12.24"
-
-mc-query = "2.0.0"
 
 thiserror = "2.0.17"
 anyhow = "1.0.97"
