@@ -39,8 +39,8 @@
           root = unfilteredRoot;
           fileset = lib.fileset.unions [
             (craneLib.fileset.commonCargoSources unfilteredRoot)
-            ./migrations
-            ./.sqlx
+            # ./migrations
+            # ./.sqlx
           ];
         };
 

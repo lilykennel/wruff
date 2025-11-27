@@ -1,1 +1,10 @@
 /target
+/.direnv
+
+.env
+.env.development
+config.toml
+
+*.db*
+
+result
