@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -eu
+
+if ! cargo fmt -- --check; then
+    printf "\n⁉️  Found some code style issues! Please run 'cargo fmt'."
+    exit 1
+fi
+
+if ! cargo clippy --all-targets -- -D warnings; then
+    printf "\n⁉️  Clippy ran into some issues! Please run 'cargo clippy --fix'."
+    printf ""
+    exit 1
+fi
+
+exit 0
