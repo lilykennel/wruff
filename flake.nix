@@ -1,4 +1,3 @@
-# Adapted from https://fasterthanli.me/series/building-a-rust-service-with-nix/part-10
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -8,14 +7,14 @@
       url = "github:oxalica/rust-overlay";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
+        # flake-utils.follows = "flake-utils";
       };
     };
   };
 
   outputs =
     {
-      self, # although nixd thinks otherwise, this is required
+      self,
       nixpkgs,
       flake-utils,
       rust-overlay,
@@ -33,63 +32,65 @@
 
         rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
-        unfilteredRoot = ./.;
-        src = lib.fileset.toSource {
-          root = unfilteredRoot;
-          fileset = lib.fileset.unions [
-            (craneLib.fileset.commonCargoSources unfilteredRoot)
-            # ./migrations
-            # ./.sqlx
-          ];
-        };
-
-        nativeBuildInputs = with pkgs; [
-          rustToolchain
-          bacon
-          sqlx-cli
-          pkg-config
-        ];
-        buildInputs = with pkgs; [
-          openssl
-        ];
+        src = craneLib.cleanCargoSource ./.;
 
         commonArgs = {
-          inherit src buildInputs nativeBuildInputs;
+          inherit src;
           strictDeps = true;
+          buildInputs = [
+
+          ];
+
         };
+
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-        appName = "wruff";
+        individualCrateArgs = commonArgs // {
+          inherit cargoArtifacts;
+          inherit (craneLib.crateNameFromCargoToml { inherit src; }) version;
+        };
 
-        bin = craneLib.buildPackage (
-          commonArgs
+        fileSetForCrate =
+          crate:
+          lib.fileset.toSource {
+            root = ./.;
+            fileset = lib.fileset.unions [
+              ./Cargo.toml
+              ./Cargo.lock
+              (craneLib.fileset.commonCargoSources ./crates/wruff)
+            ];
+          };
+
+        wruff-bot = craneLib.buildPackage (
+          individualCrateArgs
           // {
-            inherit cargoArtifacts;
+            src = fileSetForCrate ./crates/wruff-bot;
           }
         );
 
-        dockerImage = pkgs.dockerTools.buildImage {
-          name = "ghcr.io/lilydevmc/${appName}";
-          tag = "latest";
-          copyToRoot = [ bin ];
-          config = {
-            Cmd = [ "${bin}/bin/${appName}" ];
-          };
-        };
+        wruff-api = craneLib.buildPackage (
+          individualCrateArgs
+          // {
+            src = fileSetForCrate ./crates/wruff-api;
+          }
+        );
       in
       {
         checks = {
-          inherit bin;
+          inherit wruff-bot wruff-api;
         };
 
         packages = {
-          inherit bin dockerImage;
-          default = bin;
+          inherit wruff-bot wruff-api;
+          default = wruff-api;
         };
 
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
+          packages = with pkgs; [
+            bacon
+            sqlx-cli
+          ];
         };
       }
     );
